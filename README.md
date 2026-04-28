@@ -1,60 +1,145 @@
-# Full Page Screenshotter
+<p align="center">
+  <img src="https://github.com/Amarjit/Amarjit/blob/8fcf625e15375f3bc257127505c88e63d046f407/assets/fullscreen-shotter/fullscreen-shotter.png" alt="Full Page Screenshotter mascot" width="420">
+</p>
 
-Full Page Screenshotter is a Firefox extension for taking screenshots of whole web pages. It can capture normal pages quickly, and it can also work through longer or more awkward pages by scrolling, capturing each visible part, and joining the pieces into one image.
+<p align="center">
+  Screenshotter turns any webpage into clean, full-page screenshots in just a few clicks.
+</p>
 
-## What it does
+<p align="center">
+  <a href="https://addons.mozilla.org/en-GB/firefox/addon/fullpage-screenshotter/">
+    <img src="https://img.shields.io/badge/Firefox-Add--on-FF7139?logo=firefox-browser&logoColor=white" alt="Firefox Add-on">
+  </a>
+</p>
 
-- Captures full-page screenshots from Firefox.
-- Handles pages that scroll down, across, or inside a page panel.
-- Offers Fast Capture for simple pages.
-- Offers Dynamic Scroll Capture for long pages, lazy-loaded pages, and web apps.
-- Can temporarily hide repeated sticky headers, navigation bars, and common help/chat widgets while capturing.
-- Can pause page animations and simplify backgrounds during dynamic capture.
-- Opens the finished screenshot in a new tab.
-- Lets you download the screenshot as a PNG or copy it to the clipboard.
-- Keeps screenshot data local in your browser.
+<h1 align="center">Full Page Screenshotter</h1>
 
-## Why there are two capture modes
+A Firefox WebExtension that captures full-page screenshots including horizontal and vertical scroll areas. Click the toolbar button to capture the entire page and view it in a new tab for easy saving.
 
-Fast Capture is the best first choice for normal pages. It is quick and simple.
+## Features
 
-Dynamic Scroll Capture is for pages that are too long, load more content as you scroll, or keep their own scrolling area inside the page. It scrolls through the page, takes multiple captures, and stitches them together.
+- Fast Capture for quick screenshots of normal/static pages
+- Dynamic Scroll Capture for long, lazy-loaded, and app-style pages
+- Supports vertical, horizontal, and nested scroll areas
+- Lossless PNG screenshots
+- Opens screenshots in a new tab with a direct download button
+- Copy finished screenshots to the clipboard
+- Advanced dynamic options for tricky pages
+- Stop an active Dynamic Scroll Capture from the popup
+- Local-only capture with no tracking, analytics, uploads, or external services
 
-## Privacy
+## What It Does And Why It Helps
 
-The extension does not upload your screenshots. It does not use tracking, analytics, or external services. Screenshot data stays in Firefox and is shown on the result page so you can save or copy it.
+- **Fast Capture** takes a quick screenshot when the page can be captured in one pass. It is the simplest option for static pages, articles, dashboards, and normal websites.
+- **Dynamic Scroll Capture** scrolls through the page, captures each view, and stitches the result together. This helps with long pages, lazy-loaded content, infinite-scroll style pages, and sites that do not expose the whole page in one normal browser screenshot.
+- **Stop Capture** lets you cancel a Dynamic Scroll Capture while it is running. Click the toolbar icon again to reopen the popup, then click **Stop Capture**. If some screenshots were already captured, the extension may show the partial result.
+- **Nested scroll container support** detects when a site scrolls inside its own page container instead of the main browser window. This is useful for app-style sites such as social feeds, code hosting pages, dashboards, and other modern web apps.
+- **Horizontal and vertical capture** handles pages that scroll sideways as well as down, so wide layouts and large web apps are less likely to be cut off.
+- **Lossless PNG output** keeps text, UI, and page details sharp without JPEG compression artifacts.
+- **Automatic stitching** combines the captured screens into one image. The default gap is `0`, so screenshots are joined without intentional spacing.
+- **Sticky header and overlay hiding** can temporarily hide repeated fixed elements such as sticky nav bars, headers, toolbars, and known chat/help widgets while Dynamic Scroll Capture runs. This reduces repeated bars appearing in every stitched section.
+- **Advanced dynamic options** give control when a page is awkward:
+  - **Max scrolls** limits how far Dynamic Scroll Capture will go.
+  - **Delay** waits between scrolls so lazy-loaded content has time to appear.
+  - **Gap / overlap** adjusts how screenshots are joined if a site needs compensation.
+  - **Start from top** starts capture at the top of the page or scroll container.
+  - **Hide page overlays** removes repeated sticky elements while capturing.
+  - **Disable backgrounds** can simplify noisy or heavy backgrounds.
+  - **Pause animations/transitions** helps keep moving content stable between captures.
+- **Local dynamic settings** remember your advanced capture choices in Firefox local storage, so the same values are available the next time you open the popup.
+- **Download, copy, and close controls** open with the finished screenshot so the image can be saved directly, copied to the clipboard, or closed from the result page. Filenames use the `screenshotter-YYYYMMDD-HHMMSS.png` format.
+- **Friendly error page** explains common problems in plain language, including blocked Firefox pages, private browsing permission issues, and site permission problems.
+- **Designed for modern websites** including static pages, React/SPAs, lazy-loaded layouts, and nested-scroll pages. Firefox-protected pages such as `about:` pages and sites that block capture may still be unavailable.
+- **Private by design**: screenshots stay in your browser. The extension does not track you, does not run analytics, does not upload screenshots, does not call external services, and does not store screenshots remotely. Finished screenshots are handed to the result page in memory so they can be displayed, downloaded, or copied without being permanently stored by the extension.
+- **Clean production package**: release builds use an allowlist and exclude tests, documentation, package metadata, repository files, and previous build artifacts.
 
-The extension stores only local capture preferences, such as dynamic capture delay and overlay options.
+## Installation
 
-## Firefox permissions
+### Firefox Add-ons
 
-Firefox asks for permissions so the extension can do its job:
+Install or view the published Firefox extension here:
+https://addons.mozilla.org/en-GB/firefox/addon/fullpage-screenshotter/
 
-- activeTab: lets the extension work with the tab you choose when you click the toolbar button.
-- storage: saves your capture preferences locally.
-- clipboardWrite: lets the result page copy the finished screenshot when you click the copy button.
-- all website access: needed by Firefox's screenshot capture API so captures work across normal websites.
+### Development Installation
 
-The extension starts capturing only when you click its button.
+1. Clone this repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run in Firefox for development:
+   ```bash
+   npm start
+   ```
 
-## Private browsing
+### Production Installation
 
-Firefox requires you to allow extensions manually in private windows. To use this extension in a private window, open the extension settings in Firefox and enable Allow in Private Windows.
+1. Package the extension:
+   ```bash
+   npm run build
+   ```
+2. Load the generated `.zip` file in Firefox:
+   - Open Firefox and go to `about:debugging`
+   - Click "This Firefox"
+   - Click "Load Temporary Add-on"
+   - Select the `.zip` file
 
-## Basic use
+## Firefox Permissions
 
-1. Install the extension in Firefox.
-2. Pin it to the Firefox toolbar if needed.
-3. Open the page you want to capture.
-4. Click the extension button.
-5. Choose Fast Capture for normal pages, or Dynamic Scroll Capture for long or app-style pages.
-6. Use the result page to download or copy the screenshot.
+This extension requires the following permissions:
+
+- **`activeTab`**: Temporary access to the current tab when you click the extension icon. This allows capturing screenshots without requiring permanent access to all tabs.
+- **`storage`**: Saves your capture preferences locally in your browser.
+- **`clipboardWrite`**: Allows the result page to copy the finished PNG screenshot to your clipboard when you click "Copy to Clipboard".
+- **`<all_urls>`**: Required for the `captureVisibleTab()` API to work across regular websites. The extension only accesses pages when you actively start capture. Firefox-protected pages and sites that block capture may still be unavailable.
+- **`tabs` (optional)**: For enhanced tab management features if needed in future updates.
+
+**Security Note**: The extension only accesses tabs when you actively start a capture. No screenshot data is collected, transmitted externally, analyzed, uploaded, or stored beyond your local browser session and local browser settings.
+
+## Private Browsing
+
+To use this extension in Firefox Private Browsing windows:
+
+1. Right-click the extension icon in your toolbar
+2. Select "Manage Extension"
+3. Under "Permissions", enable "Allow in Private Windows"
+
+**Note**: Firefox requires explicit permission for extensions to work in private browsing mode for privacy reasons. This setting must be enabled manually by the user.
+
+## Usage
+
+1. Pin the extension to your Firefox toolbar
+2. Navigate to a webpage
+3. Click the camera icon in your toolbar
+4. Choose **Fast Capture** for normal pages
+5. Choose **Dynamic Scroll Capture** for long, lazy-loaded, or app-style pages
+6. Open **Advanced options** if you need to adjust max scrolls, delay, gap/overlap, start position, overlay hiding, backgrounds, or animations
+7. While Dynamic Scroll Capture is running, click the toolbar icon again and press **Stop Capture** if you need to cancel it
+8. Use the result page buttons to download, copy, or close the screenshot tab
+
 
 ## Troubleshooting
 
-Firefox may block protected internal pages, such as about: pages, by default. Where Firefox offers an extension setting for this, enable that permission in the extension options before capturing those pages. Some websites may also block capture or behave differently while scrolling.
+### Screenshot doesn't capture full page
+- Ensure you're using a supported Firefox version
+- Try Dynamic Scroll Capture for long, lazy-loaded, or app-style pages
+- Increase the dynamic delay if content loads slowly while scrolling
+- Increase max scrolls if Dynamic Scroll Capture stops before the full page is captured
+- Enable Hide page overlays if repeated sticky headers, navigation bars, or chat widgets appear in the stitched image
+- Try disabling other extensions that might interfere
 
-If a screenshot is cut off, try Dynamic Scroll Capture. If content is missing, increase the delay so the page has more time to load while scrolling. If repeated headers or floating widgets appear in the image, enable the option to hide page overlays.
+### Extension icon doesn't appear
+- Right-click in the toolbar and select "Customize Toolbar"
+- Drag the camera icon to your toolbar
+
+### Permission errors
+- The extension requires the listed permissions to function
+- Review the permissions section above for details
+
+## Browser Compatibility
+
+- Firefox 142.0 or newer
+- Manifest version 2
 
 ## License
 
