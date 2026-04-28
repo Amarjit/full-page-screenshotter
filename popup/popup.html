@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 260px;
+      margin: 0;
+      padding: 14px;
+      color: #1f2933;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f8fafc;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      color: #0f172a;
+      font-size: 16px;
+    }
+
+    .description {
+      margin: 0 0 6px;
+      color: #52606d;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .dynamic-description {
+      margin: -2px 0 8px;
+      color: #52606d;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #334e68;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 7px 8px;
+      border: 1px solid #bcccdc;
+      border-radius: 5px;
+      font: inherit;
+    }
+
+    .dynamic-panel {
+      margin-top: 16px;
+      padding: 10px;
+      border: 1px solid #d9e2ec;
+      border-radius: 6px;
+      background: #ffffff;
+    }
+
+    .dynamic-title {
+      margin: 0 0 8px;
+      color: #243b53;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .dynamic-settings {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .dynamic-settings label {
+      margin-bottom: 4px;
+      font-size: 11px;
+      line-height: 1.15;
+    }
+
+    .dynamic-settings input {
+      margin: 0;
+    }
+
+    .dynamic-options-toggle {
+      display: inline-block;
+      width: auto;
+      margin-top: 8px;
+      color: #0b69a3;
+      background: none;
+      border: 0;
+      padding: 0;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .dynamic-options-toggle:hover {
+      color: #075985;
+      background: none;
+    }
+
+    .advanced-options {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .checkbox-setting {
+      display: flex;
+      gap: 7px;
+      align-items: flex-start;
+      margin-top: 8px;
+      color: #334e68;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .checkbox-setting input {
+      width: auto;
+      margin: 1px 0 0;
+    }
+
+    .input-with-unit {
+      position: relative;
+    }
+
+    .input-with-unit input {
+      padding-right: 24px;
+    }
+
+    .unit {
+      position: absolute;
+      right: 7px;
+      bottom: 7px;
+      color: #6b7280;
+      font-size: 11px;
+      pointer-events: none;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 8px;
+      padding: 9px;
+      border: 0;
+      border-radius: 6px;
+      color: white;
+      background: #0b69a3;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover {
+      background: #075985;
+    }
+
+    button.secondary {
+      color: #0b69a3;
+      background: #e0f2fe;
+    }
+
+    button.secondary:hover {
+      background: #bae6fd;
+    }
+
+    button.danger {
+      background: #b91c1c;
+    }
+
+    button.danger:hover {
+      background: #991b1b;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #fastCapture {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      margin-top: 4px;
+      padding: 12px 9px;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .status {
+      min-height: 16px;
+      margin-top: 10px;
+      color: #52606d;
+      font-size: 12px;
+      line-height: 1.35;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h3>Full Page Screenshot</h3>
+  <p class="description">Use fast capture for static pages.</p>
+
+  <button id="fastCapture" title="Capture quickly without waiting for dynamic scrolling.">Fast Capture</button>
+  <div class="dynamic-panel">
+    <div class="dynamic-title">Dynamic capture</div>
+    <p class="dynamic-description">Use this if the screenshot is cut off, missing content, or the page loads more as you scroll.</p>
+    <button id="dynamicCapture" class="secondary" title="Scroll and stitch the page or detected scroll container.">Dynamic Scroll Capture</button>
+    <button id="dynamicOptionsToggle" class="dynamic-options-toggle" type="button" aria-expanded="false" title="Show advanced dynamic capture options.">Advanced options</button>
+    <div id="dynamicOptions" class="advanced-options" hidden>
+      <div class="dynamic-settings">
+        <div>
+          <label for="maxScrolls" title="Maximum vertical positions dynamic capture will visit before stopping.">Max scrolls</label>
+          <input id="maxScrolls" type="number" min="1" max="200" value="25" title="Maximum vertical positions dynamic capture will visit before stopping.">
+        </div>
+        <div class="input-with-unit">
+          <label for="waitSeconds" title="Delay after each scroll so lazy-loaded content can settle before capture.">Delay</label>
+          <input id="waitSeconds" type="number" min="0" max="5" step="0.1" value="0.5" title="Delay after each scroll so lazy-loaded content can settle before capture.">
+          <span class="unit">s</span>
+        </div>
+        <div>
+          <label for="gapPx" title="Pixel spacing between vertical screenshots. Negative values overlap screenshots to avoid seams.">Gap / overlap</label>
+          <input id="gapPx" type="number" min="-200" max="200" step="1" value="0" title="Pixel spacing between vertical screenshots. Negative values overlap screenshots to avoid seams.">
+        </div>
+      </div>
+      <label class="checkbox-setting" for="startFromTop" title="Start dynamic capture at the top of the page or scroll container. Turn off to begin from the current scroll position.">
+        <input id="startFromTop" type="checkbox" checked>
+        <span>Start from top</span>
+      </label>
+      <label class="checkbox-setting" for="hideOverlays" title="Temporarily hide repeated page overlays such as sticky headers, navigation bars, and chat/help widgets.">
+        <input id="hideOverlays" type="checkbox" checked>
+        <span>Hide page overlays</span>
+      </label>
+      <label class="checkbox-setting" for="disableBackgrounds" title="Temporarily remove CSS backgrounds during dynamic capture. Useful for noisy or heavy backgrounds.">
+        <input id="disableBackgrounds" type="checkbox">
+        <span>Disable backgrounds</span>
+      </label>
+      <label class="checkbox-setting" for="pauseAnimations" title="Temporarily pause CSS animations and transitions so content is less likely to move between screenshots.">
+        <input id="pauseAnimations" type="checkbox" checked>
+        <span>Pause animations/transitions</span>
+      </label>
+    </div>
+  </div>
+  <button id="stopCapture" class="danger" hidden>Stop Capture</button>
+
+  <div id="status" class="status">Ready</div>
+  <script src="popup.js"></script>
+</body>
+</html>
