@@ -60,30 +60,6 @@ A Firefox WebExtension that captures full-page screenshots including horizontal 
 Install or view the published Firefox extension here:
 https://addons.mozilla.org/en-GB/firefox/addon/fullpage-screenshotter/
 
-### Development Installation
-
-1. Clone this repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run in Firefox for development:
-   ```bash
-   npm start
-   ```
-
-### Production Installation
-
-1. Package the extension:
-   ```bash
-   npm run build
-   ```
-2. Load the generated `.zip` file in Firefox:
-   - Open Firefox and go to `about:debugging`
-   - Click "This Firefox"
-   - Click "Load Temporary Add-on"
-   - Select the `.zip` file
-
 ## Firefox Permissions
 
 This extension requires the following permissions:
@@ -116,7 +92,6 @@ To use this extension in Firefox Private Browsing windows:
 6. Open **Advanced options** if you need to adjust max scrolls, delay, gap/overlap, start position, overlay hiding, backgrounds, or animations
 7. While Dynamic Scroll Capture is running, click the toolbar icon again and press **Stop Capture** if you need to cancel it
 8. Use the result page buttons to download, copy, or close the screenshot tab
-
 
 ## Troubleshooting
 
