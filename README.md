@@ -26,6 +26,7 @@ A Firefox WebExtension that captures full-page screenshots including horizontal 
 - Copy finished screenshots to the clipboard
 - Advanced dynamic options for tricky pages
 - Optional single-click toolbar capture using a saved static or dynamic default
+- Assignable extension shortcuts for Fast Capture and Dynamic Scroll Capture
 - Stop an active Dynamic Scroll Capture from the popup
 - Local-only capture with no tracking, analytics, uploads, or external services
 
@@ -49,6 +50,7 @@ A Firefox WebExtension that captures full-page screenshots including horizontal 
   - **Pause animations/transitions** helps keep moving content stable between captures.
 - **Local dynamic settings** remember your advanced capture choices in Firefox local storage, so the same values are available the next time you open the popup.
 - **Single-click toolbar capture** can be enabled from the extension options page. When enabled, clicking the toolbar button immediately captures with your saved Static Capture or Dynamic Scroll Capture default instead of opening the popup. Clicking the toolbar button again cancels an active Dynamic Scroll Capture. Turning single-click capture off restores the normal popup workflow.
+- **Extension shortcuts** expose separate Fast Capture and Dynamic Scroll Capture commands in Firefox's extension shortcut settings. You can open shortcut setup from the Keyboard Shortcuts section in the extension options page, or manually from Firefox's **Manage Extension Shortcuts** page. No default keys are assigned, so you can choose shortcuts that do not conflict with Firefox, websites, or other add-ons.
 - **Download, copy, and close controls** open with the finished screenshot so the image can be saved directly, copied to the clipboard, or closed from the result page. Filenames use the `screenshotter-YYYYMMDD-HHMMSS.png` format.
 - **Friendly error page** explains common problems in plain language, including blocked Firefox pages, private browsing permission issues, and site permission problems.
 - **Designed for modern websites** including static pages, React/SPAs, lazy-loaded layouts, and nested-scroll pages. Firefox-protected pages such as `about:` pages and sites that block capture may still be unavailable.
@@ -86,15 +88,55 @@ To use this extension in Firefox Private Browsing windows:
 
 ## Usage
 
+### Capture From The Toolbar
+
 1. Pin the extension to your Firefox toolbar
 2. Navigate to a webpage
 3. Click the camera icon in your toolbar
 4. Choose **Fast Capture** for normal pages
 5. Choose **Dynamic Scroll Capture** for long, lazy-loaded, or app-style pages
 6. Open **Advanced options** if you need to adjust max scrolls, delay, gap/overlap, start position, overlay hiding, backgrounds, or animations
-7. To make the toolbar button capture immediately, open the extension options, enable **Use single-click capture**, and choose Static Capture or Dynamic Scroll Capture as the default
-8. While Dynamic Scroll Capture is running, click the toolbar icon again to cancel it in single-click mode, or press **Stop Capture** when the popup workflow is enabled
-9. Use the result page buttons to download, copy, or close the screenshot tab
+7. While Dynamic Scroll Capture is running, click the toolbar icon again to cancel it in single-click mode, or press **Stop Capture** when the popup workflow is enabled
+8. Use the result page buttons to download, copy, or close the screenshot tab
+
+### Enable Single-Click Toolbar Capture
+
+1. Open `about:addons` in Firefox
+2. Select **Extensions**
+3. Find **Fullscreen Shotter**
+4. Open the extension menu or details page
+5. Open **Preferences** or **Options**
+6. Enable **Use single-click capture**
+7. Choose **Static Capture** or **Dynamic Scroll Capture** as the default toolbar action
+8. If you choose Dynamic Scroll Capture, adjust the dynamic settings shown below the default mode
+9. Return to a webpage and click the toolbar icon to capture immediately without opening the popup
+
+### Create Keyboard Shortcuts
+
+You can set shortcuts either from the extension settings link or directly from Firefox's shortcut manager.
+
+#### From Extension Settings
+
+1. Open `about:addons` in Firefox
+2. Select **Extensions**
+3. Find **Fullscreen Shotter**
+4. Open the extension menu or details page
+5. Open **Preferences** or **Options**
+6. In **Keyboard Shortcuts**, click **Manage keyboard shortcuts**
+7. Assign a key combination to **Capture the current page with Fast Capture**
+8. Assign a key combination to **Capture the current page with Dynamic Scroll Capture** if you want a separate dynamic shortcut
+9. Close the shortcut assignment window after setting shortcuts so Firefox activates the new assignments
+10. Firefox, websites, and other add-ons can have their own shortcuts, so choose key combinations that do not conflict
+
+#### From Firefox Shortcuts
+
+1. Open `about:addons` in Firefox
+2. Click the gear icon near the top of the Add-ons Manager
+3. Choose **Manage Extension Shortcuts**
+4. Find **Fullscreen Shotter**
+5. Assign shortcuts for Fast Capture and/or Dynamic Scroll Capture
+6. Close the shortcut assignment window after setting shortcuts so Firefox activates the new assignments
+7. Firefox, websites, and other add-ons can have their own shortcuts, so choose key combinations that do not conflict
 
 ## Troubleshooting
 

@@ -1,6 +1,8 @@
 try {
     let activeCapture = null;
     const screenshotResults = new Map;
+    const CAPTURE_COMMAND_STATIC = "capture-static";
+    const CAPTURE_COMMAND_DYNAMIC = "capture-dynamic";
     const DEFAULT_CAPTURE_PREFERENCES = {
         singleClickCaptureEnabled: false,
         defaultCaptureMode: "static",
@@ -55,9 +57,9 @@ try {
             popup: preferences.singleClickCaptureEnabled ? "" : "popup/popup.html"
         });
     }
-    function preferencesToCaptureOptions(preferences) {
+    function preferencesToCaptureOptions(preferences, modeOverride = null) {
         return {
-            mode: captureModeToRuntimeMode(preferences.defaultCaptureMode),
+            mode: modeOverride || captureModeToRuntimeMode(preferences.defaultCaptureMode),
             maxScrolls: preferences.dynamicMaxScrolls,
             waitMs: preferences.dynamicWaitMs,
             gapPx: preferences.dynamicGapPx,
@@ -239,6 +241,37 @@ try {
             activeCapture = null;
         }
     }
+    function commandToCaptureMode(command) {
+        if (command === CAPTURE_COMMAND_STATIC) {
+            return "fast";
+        }
+        if (command === CAPTURE_COMMAND_DYNAMIC) {
+            return "dynamic";
+        }
+        return null;
+    }
+    async function startCaptureFromCommand(command) {
+        const mode = commandToCaptureMode(command);
+        if (!mode) {
+            return;
+        }
+        if (activeCapture && activeCapture.active) {
+            return;
+        }
+        activeCapture = {
+            active: true,
+            cancelled: false,
+            mode: mode,
+            progress: ""
+        };
+        try {
+            const preferences = await getCapturePreferences();
+            const options = preferencesToCaptureOptions(preferences, mode);
+            await handleToolbarClick(options);
+        } finally {
+            activeCapture = null;
+        }
+    }
     function closeResultTab(sender, sendResponse) {
         if (!sender || !sender.tab || sender.tab.id == null) {
             sendResponse({
@@ -283,6 +316,13 @@ try {
                 console.error("Single-click capture failed:", error);
             });
         });
+        if (browser.commands && browser.commands.onCommand) {
+            browser.commands.onCommand.addListener(command => {
+                startCaptureFromCommand(command).catch(error => {
+                    console.error("Shortcut capture failed:", error);
+                });
+            });
+        }
         browser.storage.onChanged.addListener((changes, areaName) => {
             if (areaName !== "local") {
                 return;

@@ -136,6 +136,24 @@
       font-weight: 650;
     }
 
+    .action-button {
+      margin-top: 16px;
+      padding: 9px 14px;
+      border: 1px solid #0b69a3;
+      border-radius: 5px;
+      color: #ffffff;
+      background: #0b69a3;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .action-button:hover {
+      background: #084f7a;
+      border-color: #084f7a;
+    }
+
     @media (max-width: 620px) {
       .field-grid,
       .inline-options {
@@ -208,6 +226,13 @@
           </div>
         </div>
       </div>
+    </fieldset>
+
+    <fieldset id="shortcutSettings">
+      <legend>Keyboard Shortcuts</legend>
+      <p class="feature-intro">Assign shortcuts for Fast Capture and Dynamic Scroll Capture using Firefox's extension shortcut settings.</p>
+      <p>Firefox, websites, and other add-ons can have their own shortcuts, so choose key combinations that do not conflict. Close the shortcut assignment window after setting shortcuts so Firefox activates the new assignments.</p>
+      <button id="shortcutSettingsButton" class="action-button" type="button">Manage keyboard shortcuts</button>
     </fieldset>
 
     <div id="status" class="status" role="status"></div>
