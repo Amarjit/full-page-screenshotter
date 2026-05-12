@@ -15,8 +15,12 @@ async function initializeOptions() {
     bindAutoSave(controls);
     bindShortcutSettings(controls);
     try {
-        const stored = await browser.storage.local.get([ "singleClickCaptureEnabled", "defaultCaptureMode", "dynamicMaxScrolls", "dynamicWaitMs", "dynamicGapPx", "dynamicStartFromTop", "dynamicHideOverlays", "dynamicDisableBackgrounds", "dynamicPauseAnimations" ]);
+        const stored = await browser.storage.local.get([ "singleClickCaptureEnabled", "defaultCaptureMode", "postCaptureOpenResult", "postCaptureDownload", "postCaptureCopy", "dynamicMaxScrolls", "dynamicWaitMs", "dynamicGapPx", "dynamicStartFromTop", "dynamicHideOverlays", "dynamicDisableBackgrounds", "dynamicPauseAnimations" ]);
         controls.singleClickCaptureEnabled.checked = stored.singleClickCaptureEnabled === true;
+        controls.postCaptureOpenResult.checked = stored.postCaptureOpenResult !== false;
+        controls.postCaptureDownload.checked = stored.postCaptureDownload === true;
+        controls.postCaptureCopy.checked = stored.postCaptureCopy === true;
+        ensurePostCaptureActionSelected(controls);
         const defaultMode = normalizeDefaultCaptureMode(stored.defaultCaptureMode);
         controls.defaultModeStatic.checked = defaultMode === "static";
         controls.defaultModeDynamic.checked = defaultMode === "dynamic";
@@ -37,6 +41,9 @@ function getControls() {
     return {
         singleClickCaptureEnabled: document.getElementById("singleClickCaptureEnabled"),
         singleClickControls: document.getElementById("singleClickControls"),
+        postCaptureOpenResult: document.getElementById("postCaptureOpenResult"),
+        postCaptureDownload: document.getElementById("postCaptureDownload"),
+        postCaptureCopy: document.getElementById("postCaptureCopy"),
         dynamicSettingsPanel: document.getElementById("dynamicSettingsPanel"),
         defaultModeStatic: document.getElementById("defaultModeStatic"),
         defaultModeDynamic: document.getElementById("defaultModeDynamic"),
@@ -69,7 +76,11 @@ function bindShortcutSettings(controls) {
 }
 
 function getManagedInputs(controls) {
-    return [ controls.singleClickCaptureEnabled, controls.defaultModeStatic, controls.defaultModeDynamic, controls.maxScrolls, controls.waitSeconds, controls.gapPx, controls.startFromTop, controls.hideOverlays, controls.disableBackgrounds, controls.pauseAnimations ];
+    return [ controls.singleClickCaptureEnabled, controls.postCaptureOpenResult, controls.postCaptureDownload, controls.postCaptureCopy, ...getSingleClickInputs(controls) ];
+}
+
+function getSingleClickInputs(controls) {
+    return [ controls.defaultModeStatic, controls.defaultModeDynamic, controls.maxScrolls, controls.waitSeconds, controls.gapPx, controls.startFromTop, controls.hideOverlays, controls.disableBackgrounds, controls.pauseAnimations ];
 }
 
 function updateOptionState(controls) {
@@ -79,8 +90,7 @@ function updateOptionState(controls) {
     controls.singleClickControls.classList.toggle("is-disabled", !singleClickEnabled);
     controls.dynamicSettingsPanel.hidden = !showDynamicSettings;
     controls.dynamicSettingsPanel.setAttribute("aria-hidden", String(!showDynamicSettings));
-    const nestedControls = getManagedInputs(controls).filter(control => control !== controls.singleClickCaptureEnabled);
-    for (const control of nestedControls) {
+    for (const control of getSingleClickInputs(controls)) {
         control.disabled = !singleClickEnabled;
     }
 }
@@ -90,6 +100,10 @@ async function saveOptions(controls) {
     const waitSeconds = normalizeWaitSeconds(controls.waitSeconds.value);
     const gapPx = normalizeGapPx(controls.gapPx.value);
     const defaultCaptureMode = controls.defaultModeDynamic.checked ? "dynamic" : "static";
+    const postCaptureWasEmpty = !hasPostCaptureActionSelected(controls);
+    if (postCaptureWasEmpty) {
+        controls.postCaptureOpenResult.checked = true;
+    }
     controls.maxScrolls.value = maxScrolls;
     controls.waitSeconds.value = waitSeconds;
     controls.gapPx.value = gapPx;
@@ -98,6 +112,9 @@ async function saveOptions(controls) {
         await browser.storage.local.set({
             singleClickCaptureEnabled: controls.singleClickCaptureEnabled.checked,
             defaultCaptureMode: defaultCaptureMode,
+            postCaptureOpenResult: controls.postCaptureOpenResult.checked,
+            postCaptureDownload: controls.postCaptureDownload.checked,
+            postCaptureCopy: controls.postCaptureCopy.checked,
             dynamicMaxScrolls: maxScrolls,
             dynamicWaitMs: waitSecondsToMs(waitSeconds),
             dynamicGapPx: gapPx,
@@ -106,7 +123,7 @@ async function saveOptions(controls) {
             dynamicDisableBackgrounds: controls.disableBackgrounds.checked,
             dynamicPauseAnimations: controls.pauseAnimations.checked
         });
-        setStatus("Saved");
+        setStatus(postCaptureWasEmpty ? "Saved. Open result tab stays enabled because at least one after-capture action is required." : "Saved");
     } catch (error) {
         setStatus(`Failed to save options: ${error.message}`);
     }
@@ -132,6 +149,16 @@ async function openShortcutSettings(statusWriter = setStatus) {
 
 function normalizeDefaultCaptureMode(value) {
     return value === "dynamic" ? "dynamic" : "static";
+}
+
+function hasPostCaptureActionSelected(controls) {
+    return !!(controls.postCaptureOpenResult.checked || controls.postCaptureDownload.checked || controls.postCaptureCopy.checked);
+}
+
+function ensurePostCaptureActionSelected(controls) {
+    if (!hasPostCaptureActionSelected(controls)) {
+        controls.postCaptureOpenResult.checked = true;
+    }
 }
 
 function normalizeMaxScrolls(value) {
@@ -172,6 +199,8 @@ function normalizeGapPx(value) {
 if (typeof module !== "undefined" && module.exports) {
     module.exports = {
         normalizeDefaultCaptureMode: normalizeDefaultCaptureMode,
+        hasPostCaptureActionSelected: hasPostCaptureActionSelected,
+        ensurePostCaptureActionSelected: ensurePostCaptureActionSelected,
         normalizeMaxScrolls: normalizeMaxScrolls,
         normalizeWaitSeconds: normalizeWaitSeconds,
         waitSecondsToMs: waitSecondsToMs,

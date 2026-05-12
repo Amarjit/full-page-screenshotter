@@ -19,6 +19,7 @@
             renderResult(response.result);
             document.getElementById("copyScreenshot").addEventListener("click", copyScreenshot);
             document.getElementById("closeTab").addEventListener("click", closeTab);
+            await runAutomaticActions(response.result.autoActions);
         } catch (error) {
             showError(error.message || "Could not load screenshot data. Try taking the screenshot again.");
         }
@@ -36,9 +37,53 @@
         }
         document.getElementById("result").hidden = false;
     }
-    async function copyScreenshot() {
+    async function runAutomaticActions(autoActions) {
+        const actions = normalizeAutoActions(autoActions);
+        if (!actions.download && !actions.copy) {
+            return;
+        }
+        const failures = [];
+        if (actions.download) {
+            try {
+                downloadScreenshot();
+                showStatus("Screenshot downloaded.", false, 5e3);
+            } catch (error) {
+                failures.push(error);
+                showStatus("Could not download the screenshot.", true, 5e3);
+            }
+        }
+        if (actions.copy) {
+            try {
+                await copyScreenshot({
+                    keepButtonEnabled: true
+                });
+            } catch (error) {
+                failures.push(error);
+            }
+        }
+        if (actions.closeWhenDone && failures.length === 0) {
+            await delay(750);
+            await closeTab();
+        }
+    }
+    function normalizeAutoActions(autoActions) {
+        return {
+            download: !!(autoActions && autoActions.download),
+            copy: !!(autoActions && autoActions.copy),
+            closeWhenDone: !!(autoActions && autoActions.closeWhenDone)
+        };
+    }
+    function downloadScreenshot() {
+        document.getElementById("downloadScreenshot").click();
+    }
+    function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    async function copyScreenshot(options = {}) {
         const copyButton = document.getElementById("copyScreenshot");
-        copyButton.disabled = true;
+        if (!options.keepButtonEnabled) {
+            copyButton.disabled = true;
+        }
         showStatus("Copying screenshot...", false, 0);
         try {
             const buffer = await dataUrlToArrayBuffer(screenshotDataUrl);
@@ -46,8 +91,11 @@
             showStatus("Screenshot copied to clipboard.", false, 5e3);
         } catch (error) {
             showStatus("Could not copy the screenshot. Try downloading it instead.", true, 5e3);
+            throw error;
         } finally {
-            copyButton.disabled = false;
+            if (!options.keepButtonEnabled) {
+                copyButton.disabled = false;
+            }
         }
     }
     async function closeTab() {
