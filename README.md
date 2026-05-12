@@ -25,6 +25,7 @@ A Firefox WebExtension that captures full-page screenshots including horizontal 
 - Opens screenshots in a new tab with a direct download button
 - Copy finished screenshots to the clipboard
 - Advanced dynamic options for tricky pages
+- Optional single-click toolbar capture using a saved static or dynamic default
 - Stop an active Dynamic Scroll Capture from the popup
 - Local-only capture with no tracking, analytics, uploads, or external services
 
@@ -47,6 +48,7 @@ A Firefox WebExtension that captures full-page screenshots including horizontal 
   - **Disable backgrounds** can simplify noisy or heavy backgrounds.
   - **Pause animations/transitions** helps keep moving content stable between captures.
 - **Local dynamic settings** remember your advanced capture choices in Firefox local storage, so the same values are available the next time you open the popup.
+- **Single-click toolbar capture** can be enabled from the extension options page. When enabled, clicking the toolbar button immediately captures with your saved Static Capture or Dynamic Scroll Capture default instead of opening the popup. Clicking the toolbar button again cancels an active Dynamic Scroll Capture. Turning single-click capture off restores the normal popup workflow.
 - **Download, copy, and close controls** open with the finished screenshot so the image can be saved directly, copied to the clipboard, or closed from the result page. Filenames use the `screenshotter-YYYYMMDD-HHMMSS.png` format.
 - **Friendly error page** explains common problems in plain language, including blocked Firefox pages, private browsing permission issues, and site permission problems.
 - **Designed for modern websites** including static pages, React/SPAs, lazy-loaded layouts, and nested-scroll pages. Firefox-protected pages such as `about:` pages and sites that block capture may still be unavailable.
@@ -90,8 +92,9 @@ To use this extension in Firefox Private Browsing windows:
 4. Choose **Fast Capture** for normal pages
 5. Choose **Dynamic Scroll Capture** for long, lazy-loaded, or app-style pages
 6. Open **Advanced options** if you need to adjust max scrolls, delay, gap/overlap, start position, overlay hiding, backgrounds, or animations
-7. While Dynamic Scroll Capture is running, click the toolbar icon again and press **Stop Capture** if you need to cancel it
-8. Use the result page buttons to download, copy, or close the screenshot tab
+7. To make the toolbar button capture immediately, open the extension options, enable **Use single-click capture**, and choose Static Capture or Dynamic Scroll Capture as the default
+8. While Dynamic Scroll Capture is running, click the toolbar icon again to cancel it in single-click mode, or press **Stop Capture** when the popup workflow is enabled
+9. Use the result page buttons to download, copy, or close the screenshot tab
 
 ## Troubleshooting
 

@@ -1,6 +1,17 @@
 try {
     let activeCapture = null;
     const screenshotResults = new Map;
+    const DEFAULT_CAPTURE_PREFERENCES = {
+        singleClickCaptureEnabled: false,
+        defaultCaptureMode: "static",
+        dynamicMaxScrolls: 25,
+        dynamicWaitMs: 450,
+        dynamicGapPx: 0,
+        dynamicStartFromTop: true,
+        dynamicHideOverlays: true,
+        dynamicDisableBackgrounds: false,
+        dynamicPauseAnimations: true
+    };
     function escapeHtml(str) {
         if (str == null) return "";
         if (typeof str !== "string") str = String(str);
@@ -17,6 +28,44 @@ try {
     }
     function padDatePart(value) {
         return String(value).padStart(2, "0");
+    }
+    function normalizeDefaultCaptureMode(mode) {
+        return mode === "dynamic" ? "dynamic" : "static";
+    }
+    function captureModeToRuntimeMode(mode) {
+        return normalizeDefaultCaptureMode(mode) === "dynamic" ? "dynamic" : "fast";
+    }
+    async function getCapturePreferences() {
+        const stored = await browser.storage.local.get(Object.keys(DEFAULT_CAPTURE_PREFERENCES));
+        return {
+            singleClickCaptureEnabled: stored.singleClickCaptureEnabled === true,
+            defaultCaptureMode: normalizeDefaultCaptureMode(stored.defaultCaptureMode),
+            dynamicMaxScrolls: stored.dynamicMaxScrolls || DEFAULT_CAPTURE_PREFERENCES.dynamicMaxScrolls,
+            dynamicWaitMs: stored.dynamicWaitMs == null ? DEFAULT_CAPTURE_PREFERENCES.dynamicWaitMs : stored.dynamicWaitMs,
+            dynamicGapPx: stored.dynamicGapPx == null ? DEFAULT_CAPTURE_PREFERENCES.dynamicGapPx : stored.dynamicGapPx,
+            dynamicStartFromTop: stored.dynamicStartFromTop !== false,
+            dynamicHideOverlays: stored.dynamicHideOverlays !== false,
+            dynamicDisableBackgrounds: stored.dynamicDisableBackgrounds === true,
+            dynamicPauseAnimations: stored.dynamicPauseAnimations !== false
+        };
+    }
+    async function updateBrowserActionPopup() {
+        const preferences = await getCapturePreferences();
+        await browser.browserAction.setPopup({
+            popup: preferences.singleClickCaptureEnabled ? "" : "popup/popup.html"
+        });
+    }
+    function preferencesToCaptureOptions(preferences) {
+        return {
+            mode: captureModeToRuntimeMode(preferences.defaultCaptureMode),
+            maxScrolls: preferences.dynamicMaxScrolls,
+            waitMs: preferences.dynamicWaitMs,
+            gapPx: preferences.dynamicGapPx,
+            startFromTop: preferences.dynamicStartFromTop,
+            hideOverlays: preferences.dynamicHideOverlays,
+            disableBackgrounds: preferences.dynamicDisableBackgrounds,
+            pauseAnimations: preferences.dynamicPauseAnimations
+        };
     }
     async function getPageDimensions(tabId) {
         try {
@@ -171,6 +220,25 @@ try {
         });
         return false;
     }
+    async function startSingleClickCapture() {
+        if (activeCapture && activeCapture.active) {
+            activeCapture.cancelled = true;
+            return;
+        }
+        const preferences = await getCapturePreferences();
+        const options = preferencesToCaptureOptions(preferences);
+        activeCapture = {
+            active: true,
+            cancelled: false,
+            mode: options.mode,
+            progress: ""
+        };
+        try {
+            await handleToolbarClick(options);
+        } finally {
+            activeCapture = null;
+        }
+    }
     function closeResultTab(sender, sendResponse) {
         if (!sender || !sender.tab || sender.tab.id == null) {
             sendResponse({
@@ -209,18 +277,19 @@ try {
         return false;
     }
     async function initialize() {
+        await updateBrowserActionPopup();
         browser.browserAction.onClicked.addListener(() => {
-            if (!activeCapture) {
-                activeCapture = {
-                    active: true,
-                    cancelled: false,
-                    mode: "fast",
-                    progress: ""
-                };
-                handleToolbarClick({
-                    mode: "fast"
-                }).finally(() => {
-                    activeCapture = null;
+            startSingleClickCapture().catch(error => {
+                console.error("Single-click capture failed:", error);
+            });
+        });
+        browser.storage.onChanged.addListener((changes, areaName) => {
+            if (areaName !== "local") {
+                return;
+            }
+            if (Object.prototype.hasOwnProperty.call(changes, "singleClickCaptureEnabled")) {
+                updateBrowserActionPopup().catch(error => {
+                    console.error("Failed to update capture button behavior:", error);
                 });
             }
         });
