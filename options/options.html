@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Fullscreen Shotter Options</title>
+  <style>
+    body {
+      margin: 0;
+      color: #1f2933;
+      background: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      box-sizing: border-box;
+      width: min(760px, 100%);
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      color: #0f172a;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    p {
+      margin: 0;
+      color: #52606d;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    fieldset {
+      margin: 24px 0 0;
+      padding: 18px;
+      border: 1px solid #d9e2ec;
+      border-radius: 6px;
+      background: #ffffff;
+    }
+
+    legend {
+      padding: 0 8px;
+      color: #243b53;
+      font-size: 17px;
+      font-weight: 750;
+      line-height: 1.25;
+    }
+
+    .feature-intro {
+      margin-bottom: 16px;
+    }
+
+    .feature-controls {
+      margin-top: 24px;
+      padding-top: 22px;
+      border-top: 1px solid #d9e2ec;
+    }
+
+    .feature-controls.is-disabled {
+      opacity: 0.48;
+    }
+
+    .dynamic-settings-panel {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .setting {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .checkbox-setting,
+    .radio-setting {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: #334e68;
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.35;
+    }
+
+    .checkbox-setting input,
+    .radio-setting input {
+      width: auto;
+      margin: 2px 0 0;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    label {
+      color: #334e68;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    input[type="number"] {
+      box-sizing: border-box;
+      width: 100%;
+      margin-top: 6px;
+      padding: 8px 9px;
+      border: 1px solid #bcccdc;
+      border-radius: 5px;
+      font: inherit;
+      background: #ffffff;
+    }
+
+    input:disabled {
+      color: #6b7280;
+      background: #f3f4f6;
+      cursor: not-allowed;
+    }
+
+    .inline-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 18px;
+      margin-top: 16px;
+    }
+
+    .status {
+      min-height: 20px;
+      margin-top: 22px;
+      color: #0b69a3;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    @media (max-width: 620px) {
+      .field-grid,
+      .inline-options {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Fullscreen Shotter Options</h1>
+    <p>Choose whether the toolbar button opens the capture popup or immediately captures with your saved defaults.</p>
+
+    <fieldset id="singleClickFeature">
+      <legend>Advanced User Mode</legend>
+      <p class="feature-intro">Use this when you want the toolbar button to capture immediately with a saved default mode.</p>
+
+      <label class="checkbox-setting" for="singleClickCaptureEnabled">
+        <input id="singleClickCaptureEnabled" type="checkbox">
+        <span>Enable single-click capture</span>
+      </label>
+
+      <div id="singleClickControls" class="feature-controls">
+        <div class="setting" role="radiogroup" aria-label="Default capture mode">
+          <label class="radio-setting" for="defaultModeStatic">
+            <input id="defaultModeStatic" type="radio" name="defaultCaptureMode" value="static">
+            <span>Static capture</span>
+          </label>
+          <label class="radio-setting" for="defaultModeDynamic">
+            <input id="defaultModeDynamic" type="radio" name="defaultCaptureMode" value="dynamic">
+            <span>Dynamic scroll capture</span>
+          </label>
+        </div>
+
+        <div id="dynamicSettingsPanel" class="dynamic-settings-panel" hidden>
+          <p>These settings are used by Dynamic Scroll Capture from both the popup and single-click mode.</p>
+
+          <div class="field-grid">
+            <label for="maxScrolls">
+              Max scrolls
+              <input id="maxScrolls" type="number" min="1" max="200" value="25">
+            </label>
+            <label for="waitSeconds">
+              Delay, seconds
+              <input id="waitSeconds" type="number" min="0" max="5" step="0.1" value="0.5">
+            </label>
+            <label for="gapPx">
+              Gap / overlap, px
+              <input id="gapPx" type="number" min="-200" max="200" step="1" value="0">
+            </label>
+          </div>
+
+          <div class="inline-options">
+            <label class="checkbox-setting" for="startFromTop">
+              <input id="startFromTop" type="checkbox" checked>
+              <span>Start from top</span>
+            </label>
+            <label class="checkbox-setting" for="hideOverlays">
+              <input id="hideOverlays" type="checkbox" checked>
+              <span>Hide page overlays</span>
+            </label>
+            <label class="checkbox-setting" for="disableBackgrounds">
+              <input id="disableBackgrounds" type="checkbox">
+              <span>Disable backgrounds</span>
+            </label>
+            <label class="checkbox-setting" for="pauseAnimations">
+              <input id="pauseAnimations" type="checkbox" checked>
+              <span>Pause animations/transitions</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+
+    <div id="status" class="status" role="status"></div>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>
