@@ -6,6 +6,9 @@ try {
     const DEFAULT_CAPTURE_PREFERENCES = {
         singleClickCaptureEnabled: false,
         defaultCaptureMode: "static",
+        postCaptureOpenResult: true,
+        postCaptureDownload: false,
+        postCaptureCopy: false,
         dynamicMaxScrolls: 25,
         dynamicWaitMs: 450,
         dynamicGapPx: 0,
@@ -42,6 +45,9 @@ try {
         return {
             singleClickCaptureEnabled: stored.singleClickCaptureEnabled === true,
             defaultCaptureMode: normalizeDefaultCaptureMode(stored.defaultCaptureMode),
+            postCaptureOpenResult: stored.postCaptureOpenResult !== false,
+            postCaptureDownload: stored.postCaptureDownload === true,
+            postCaptureCopy: stored.postCaptureCopy === true,
             dynamicMaxScrolls: stored.dynamicMaxScrolls || DEFAULT_CAPTURE_PREFERENCES.dynamicMaxScrolls,
             dynamicWaitMs: stored.dynamicWaitMs == null ? DEFAULT_CAPTURE_PREFERENCES.dynamicWaitMs : stored.dynamicWaitMs,
             dynamicGapPx: stored.dynamicGapPx == null ? DEFAULT_CAPTURE_PREFERENCES.dynamicGapPx : stored.dynamicGapPx,
@@ -50,6 +56,17 @@ try {
             dynamicDisableBackgrounds: stored.dynamicDisableBackgrounds === true,
             dynamicPauseAnimations: stored.dynamicPauseAnimations !== false
         };
+    }
+    function normalizePostCaptureActions(preferences = {}) {
+        const actions = {
+            openResult: Object.prototype.hasOwnProperty.call(preferences, "openResult") ? preferences.openResult !== false : preferences.postCaptureOpenResult !== false,
+            download: Object.prototype.hasOwnProperty.call(preferences, "download") ? preferences.download === true : preferences.postCaptureDownload === true,
+            copy: Object.prototype.hasOwnProperty.call(preferences, "copy") ? preferences.copy === true : preferences.postCaptureCopy === true
+        };
+        if (!actions.openResult && !actions.download && !actions.copy) {
+            actions.openResult = true;
+        }
+        return actions;
     }
     async function updateBrowserActionPopup() {
         const preferences = await getCapturePreferences();
@@ -66,7 +83,8 @@ try {
             startFromTop: preferences.dynamicStartFromTop,
             hideOverlays: preferences.dynamicHideOverlays,
             disableBackgrounds: preferences.dynamicDisableBackgrounds,
-            pauseAnimations: preferences.dynamicPauseAnimations
+            pauseAnimations: preferences.dynamicPauseAnimations,
+            postCaptureActions: normalizePostCaptureActions(preferences)
         };
     }
     async function getPageDimensions(tabId) {
@@ -101,27 +119,45 @@ try {
             throw error;
         }
     }
-    async function displayScreenshot(imageDataUrl, warning = null) {
+    function createScreenshotResult(imageDataUrl, warning = null, filename = createScreenshotFilename(), autoActions = null) {
+        const resultId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        screenshotResults.set(resultId, {
+            imageDataUrl: imageDataUrl,
+            warning: warning,
+            filename: filename,
+            openedAt: (new Date).toLocaleString(),
+            autoActions: autoActions
+        });
+        setTimeout(() => {
+            screenshotResults.delete(resultId);
+        }, 5 * 60 * 1e3);
+        return resultId;
+    }
+    async function openResultTab(imageDataUrl, warning = null, filename = createScreenshotFilename(), autoActions = null, active = true) {
         try {
-            const filename = createScreenshotFilename();
-            const resultId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-            screenshotResults.set(resultId, {
-                imageDataUrl: imageDataUrl,
-                warning: warning,
-                filename: filename,
-                openedAt: (new Date).toLocaleString()
-            });
-            setTimeout(() => {
-                screenshotResults.delete(resultId);
-            }, 5 * 60 * 1e3);
+            const resultId = createScreenshotResult(imageDataUrl, warning, filename, autoActions);
             const tab = await browser.tabs.create({
                 url: browser.runtime.getURL(`result/result.html?id=${encodeURIComponent(resultId)}`),
-                active: true
+                active: active
             });
             return tab;
         } catch (error) {
             console.error("Failed to display screenshot:", error);
             throw error;
+        }
+    }
+    async function runPostCaptureActions(imageDataUrl, warning, preferences) {
+        const actions = normalizePostCaptureActions(preferences);
+        const filename = createScreenshotFilename();
+        const autoActions = {
+            download: actions.download,
+            copy: actions.copy,
+            closeWhenDone: !actions.openResult
+        };
+        try {
+            await openResultTab(imageDataUrl, warning, filename, autoActions, actions.openResult);
+        } catch (error) {
+            console.error("Failed to open screenshot result tab:", error);
         }
     }
     async function handleToolbarClick(options = {}) {
@@ -171,7 +207,8 @@ try {
                 const limitText = d.exceedsLimits ? `browser canvas limit (${limit.toLocaleString("en-US")}×${limit.toLocaleString("en-US")})` : `safe capture limit (${limit.toLocaleString("en-US")}×${limit.toLocaleString("en-US")})`;
                 warnings.push(`Page dimensions (${d.width.toLocaleString("en-US")}×${d.height.toLocaleString("en-US")}) exceed ${limitText}. ` + `Scroll-and-stitch capture was used.${overflowText}`);
             }
-            await displayScreenshot(result.dataUrl, warnings.length > 0 ? warnings.join(" ") : null);
+            const postCaptureActions = options.postCaptureActions || normalizePostCaptureActions(await getCapturePreferences());
+            await runPostCaptureActions(result.dataUrl, warnings.length > 0 ? warnings.join(" ") : null, postCaptureActions);
         } catch (error) {
             console.error("Capture process failed:", error);
             try {
@@ -211,7 +248,8 @@ try {
             startFromTop: message.startFromTop,
             hideOverlays: message.hideOverlays,
             disableBackgrounds: message.disableBackgrounds,
-            pauseAnimations: message.pauseAnimations
+            pauseAnimations: message.pauseAnimations,
+            postCaptureActions: message.postCaptureActions
         }).catch(error => {
             console.error("Capture process failed outside handler:", error);
         }).finally(() => {

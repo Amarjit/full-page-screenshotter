@@ -24,6 +24,7 @@ A Firefox WebExtension that captures full-page screenshots including horizontal 
 - Lossless PNG screenshots
 - Opens screenshots in a new tab with a direct download button
 - Copy finished screenshots to the clipboard
+- Configurable after-capture actions for opening, downloading, and copying screenshots
 - Advanced dynamic options for tricky pages
 - Optional single-click toolbar capture using a saved static or dynamic default
 - Assignable extension shortcuts for Fast Capture and Dynamic Scroll Capture
@@ -51,7 +52,8 @@ A Firefox WebExtension that captures full-page screenshots including horizontal 
 - **Local dynamic settings** remember your advanced capture choices in Firefox local storage, so the same values are available the next time you open the popup.
 - **Single-click toolbar capture** can be enabled from the extension options page. When enabled, clicking the toolbar button immediately captures with your saved Static Capture or Dynamic Scroll Capture default instead of opening the popup. Clicking the toolbar button again cancels an active Dynamic Scroll Capture. Turning single-click capture off restores the normal popup workflow.
 - **Extension shortcuts** expose separate Fast Capture and Dynamic Scroll Capture commands in Firefox's extension shortcut settings. You can open shortcut setup from the Keyboard Shortcuts section in the extension options page, or manually from Firefox's **Manage Extension Shortcuts** page. No default keys are assigned, so you can choose shortcuts that do not conflict with Firefox, websites, or other add-ons.
-- **Download, copy, and close controls** open with the finished screenshot so the image can be saved directly, copied to the clipboard, or closed from the result page. Filenames use the `screenshotter-YYYYMMDD-HHMMSS.png` format.
+- **After-capture actions** can be configured from the extension options page. A finished screenshot can open in the result tab, download automatically as a PNG, copy to the clipboard, or run any combination of those actions. Opening the result tab is enabled by default. Filenames use the `screenshotter-YYYYMMDD-HHMMSS.png` format.
+- **Download, copy, and close controls** are still available on the result page when the open result tab action is enabled.
 - **Friendly error page** explains common problems in plain language, including blocked Firefox pages, private browsing permission issues, and site permission problems.
 - **Designed for modern websites** including static pages, React/SPAs, lazy-loaded layouts, and nested-scroll pages. Firefox-protected pages such as `about:` pages and sites that block capture may still be unavailable.
 - **Private by design**: screenshots stay in your browser. The extension does not track you, does not run analytics, does not upload screenshots, does not call external services, and does not store screenshots remotely. Finished screenshots are handed to the result page in memory so they can be displayed, downloaded, or copied without being permanently stored by the extension.
@@ -70,7 +72,7 @@ This extension requires the following permissions:
 
 - **`activeTab`**: Temporary access to the current tab when you click the extension icon. This allows capturing screenshots without requiring permanent access to all tabs.
 - **`storage`**: Saves your capture preferences locally in your browser.
-- **`clipboardWrite`**: Allows the result page to copy the finished PNG screenshot to your clipboard when you click "Copy to Clipboard".
+- **`clipboardWrite`**: Allows the extension to copy the finished PNG screenshot to your clipboard when you click "Copy to Clipboard" or enable the Copy to clipboard after-capture action.
 - **`<all_urls>`**: Required for the `captureVisibleTab()` API to work across regular websites. The extension only accesses pages when you actively start capture. Firefox-protected pages and sites that block capture may still be unavailable.
 - **`tabs` (optional)**: For enhanced tab management features if needed in future updates.
 
@@ -97,7 +99,18 @@ To use this extension in Firefox Private Browsing windows:
 5. Choose **Dynamic Scroll Capture** for long, lazy-loaded, or app-style pages
 6. Open **Advanced options** if you need to adjust max scrolls, delay, gap/overlap, start position, overlay hiding, backgrounds, or animations
 7. While Dynamic Scroll Capture is running, click the toolbar icon again to cancel it in single-click mode, or press **Stop Capture** when the popup workflow is enabled
-8. Use the result page buttons to download, copy, or close the screenshot tab
+8. The saved after-capture actions run when the screenshot finishes
+9. Use the result page buttons to download, copy, or close the screenshot tab when the result page opens
+
+### Configure After-Capture Actions
+
+1. Open `about:addons` in Firefox
+2. Select **Extensions**
+3. Find **Fullscreen Shotter**
+4. Open the extension menu or details page
+5. Open **Preferences** or **Options**
+6. In **After Capture**, choose **Open result tab**, **Download PNG**, **Copy to clipboard**, or any combination
+7. Leave at least one action enabled; the options page keeps **Open result tab** enabled if all actions are turned off
 
 ### Enable Single-Click Toolbar Capture
 
