@@ -198,6 +198,7 @@ function normalizeGapPx(value) {
 
 if (typeof module !== "undefined" && module.exports) {
     module.exports = {
+        saveOptions: saveOptions,
         normalizeDefaultCaptureMode: normalizeDefaultCaptureMode,
         hasPostCaptureActionSelected: hasPostCaptureActionSelected,
         ensurePostCaptureActionSelected: ensurePostCaptureActionSelected,

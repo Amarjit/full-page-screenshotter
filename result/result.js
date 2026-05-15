@@ -133,4 +133,17 @@
         document.getElementById("errorMessage").textContent = message;
         document.getElementById("errorPanel").hidden = false;
     }
+    if (typeof module !== "undefined" && module.exports) {
+        module.exports = {
+            renderResult: renderResult,
+            runAutomaticActions: runAutomaticActions,
+            normalizeAutoActions: normalizeAutoActions,
+            downloadScreenshot: downloadScreenshot,
+            copyScreenshot: copyScreenshot,
+            closeTab: closeTab,
+            dataUrlToArrayBuffer: dataUrlToArrayBuffer,
+            showStatus: showStatus,
+            showError: showError
+        };
+    }
 })();
