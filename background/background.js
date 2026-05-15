@@ -3,6 +3,10 @@ try {
     const screenshotResults = new Map;
     const CAPTURE_COMMAND_STATIC = "capture-static";
     const CAPTURE_COMMAND_DYNAMIC = "capture-dynamic";
+    const PAGE_MESSAGE_TIMEOUT_MS = 5e3;
+    const SCRIPT_INJECTION_TIMEOUT_MS = 5e3;
+    const TAB_CREATE_TIMEOUT_MS = 5e3;
+    const CAPTURE_FLOW_TIMEOUT_MS = 3e4;
     const DEFAULT_CAPTURE_PREFERENCES = {
         singleClickCaptureEnabled: false,
         defaultCaptureMode: "static",
@@ -39,6 +43,29 @@ try {
     }
     function captureModeToRuntimeMode(mode) {
         return normalizeDefaultCaptureMode(mode) === "dynamic" ? "dynamic" : "fast";
+    }
+    function withTimeout(promise, timeoutMs, message) {
+        let timeoutId;
+        const timeout = new Promise((resolve, reject) => {
+            timeoutId = setTimeout(() => {
+                reject(new Error(message));
+            }, timeoutMs);
+        });
+        return Promise.race([ promise, timeout ]).finally(() => {
+            clearTimeout(timeoutId);
+        });
+    }
+    function sendTabMessageWithTimeout(tabId, message, timeoutMessage) {
+        return withTimeout(browser.tabs.sendMessage(tabId, message), PAGE_MESSAGE_TIMEOUT_MS, timeoutMessage);
+    }
+    function executeScriptWithTimeout(tabId, details) {
+        return withTimeout(browser.tabs.executeScript(tabId, details), SCRIPT_INJECTION_TIMEOUT_MS, `Timed out while injecting ${details.file || "extension script"}`);
+    }
+    function createTabWithTimeout(details, timeoutMessage = "Timed out while opening the screenshot tab") {
+        return withTimeout(browser.tabs.create(details), TAB_CREATE_TIMEOUT_MS, timeoutMessage);
+    }
+    function runCaptureFlowWithTimeout(capturePromise) {
+        return withTimeout(capturePromise, CAPTURE_FLOW_TIMEOUT_MS, "Timed out while running the screenshot capture");
     }
     async function getCapturePreferences() {
         const stored = await browser.storage.local.get(Object.keys(DEFAULT_CAPTURE_PREFERENCES));
@@ -90,29 +117,29 @@ try {
     async function getPageDimensions(tabId) {
         try {
             try {
-                const existingResponse = await browser.tabs.sendMessage(tabId, {
+                const existingResponse = await sendTabMessageWithTimeout(tabId, {
                     action: "getPageDimensions"
-                });
+                }, "Timed out while asking the page for screenshot dimensions");
                 return existingResponse;
             } catch (messageError) {}
-            await browser.tabs.executeScript(tabId, {
+            await executeScriptWithTimeout(tabId, {
                 file: "/content/scroll-strategies.js"
             });
-            await browser.tabs.executeScript(tabId, {
+            await executeScriptWithTimeout(tabId, {
                 file: "/content/overlay-manager.js"
             });
-            await browser.tabs.executeScript(tabId, {
+            await executeScriptWithTimeout(tabId, {
                 file: "/content/background-manager.js"
             });
-            await browser.tabs.executeScript(tabId, {
+            await executeScriptWithTimeout(tabId, {
                 file: "/content/motion-manager.js"
             });
-            await browser.tabs.executeScript(tabId, {
+            await executeScriptWithTimeout(tabId, {
                 file: "/content/content.js"
             });
-            const response = await browser.tabs.sendMessage(tabId, {
+            const response = await sendTabMessageWithTimeout(tabId, {
                 action: "getPageDimensions"
-            });
+            }, "Timed out while asking the injected page script for screenshot dimensions");
             return response;
         } catch (error) {
             console.error("Failed to get page dimensions:", error);
@@ -136,7 +163,7 @@ try {
     async function openResultTab(imageDataUrl, warning = null, filename = createScreenshotFilename(), autoActions = null, active = true) {
         try {
             const resultId = createScreenshotResult(imageDataUrl, warning, filename, autoActions);
-            const tab = await browser.tabs.create({
+            const tab = await createTabWithTimeout({
                 url: browser.runtime.getURL(`result/result.html?id=${encodeURIComponent(resultId)}`),
                 active: active
             });
@@ -217,10 +244,10 @@ try {
                     type: "text/html;charset=utf-8"
                 });
                 const blobUrl = URL.createObjectURL(blob);
-                await browser.tabs.create({
+                await createTabWithTimeout({
                     url: blobUrl,
                     active: true
-                });
+                }, "Timed out while opening the screenshot error tab");
             } catch (displayError) {
                 console.error("Failed to display error:", displayError);
             }
@@ -240,7 +267,7 @@ try {
             mode: message.mode || "fast",
             progress: ""
         };
-        handleToolbarClick({
+        runCaptureFlowWithTimeout(handleToolbarClick({
             mode: activeCapture.mode,
             maxScrolls: message.maxScrolls,
             waitMs: message.waitMs,
@@ -250,7 +277,7 @@ try {
             disableBackgrounds: message.disableBackgrounds,
             pauseAnimations: message.pauseAnimations,
             postCaptureActions: message.postCaptureActions
-        }).catch(error => {
+        })).catch(error => {
             console.error("Capture process failed outside handler:", error);
         }).finally(() => {
             activeCapture = null;
@@ -274,7 +301,7 @@ try {
             progress: ""
         };
         try {
-            await handleToolbarClick(options);
+            await runCaptureFlowWithTimeout(handleToolbarClick(options));
         } finally {
             activeCapture = null;
         }
@@ -305,7 +332,7 @@ try {
         try {
             const preferences = await getCapturePreferences();
             const options = preferencesToCaptureOptions(preferences, mode);
-            await handleToolbarClick(options);
+            await runCaptureFlowWithTimeout(handleToolbarClick(options));
         } finally {
             activeCapture = null;
         }

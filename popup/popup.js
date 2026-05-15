@@ -165,6 +165,11 @@ function normalizeGapPx(value) {
 
 if (typeof module !== "undefined" && module.exports) {
     module.exports = {
+        startCapture: startCapture,
+        stopCapture: stopCapture,
+        refreshStatus: refreshStatus,
+        setBusy: setBusy,
+        setStatus: setStatus,
         normalizeMaxScrolls: normalizeMaxScrolls,
         normalizeWaitSeconds: normalizeWaitSeconds,
         waitSecondsToMs: waitSecondsToMs,

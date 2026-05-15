@@ -1,5 +1,7 @@
 let captureState = null;
 
+const PAGE_LOAD_WAIT_MS = 1500;
+
 function getScrollStrategies() {
     if (!window.scrollCaptureStrategies) {
         throw new Error("Scroll capture strategies are not available");
@@ -50,17 +52,7 @@ function canCaptureSingleRect() {
 
 async function getPageDimensionsForCapture() {
     try {
-        if (document.readyState !== "complete") {
-            await new Promise(resolve => {
-                if (document.readyState === "complete") {
-                    resolve();
-                } else {
-                    window.addEventListener("load", resolve, {
-                        once: true
-                    });
-                }
-            });
-        }
+        await waitForPageLoadOrTimeout(PAGE_LOAD_WAIT_MS);
         await new Promise(resolve => setTimeout(resolve, 100));
         const dimensions = getPageDimensions();
         const rect = calculateCaptureRect();
@@ -82,6 +74,28 @@ async function getPageDimensionsForCapture() {
             error: error.message
         };
     }
+}
+
+function waitForPageLoadOrTimeout(timeoutMs) {
+    if (document.readyState === "complete") {
+        return Promise.resolve();
+    }
+    return new Promise(resolve => {
+        let settled = false;
+        const finish = () => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            window.removeEventListener("load", finish);
+            clearTimeout(timeoutId);
+            resolve();
+        };
+        const timeoutId = setTimeout(finish, timeoutMs);
+        window.addEventListener("load", finish, {
+            once: true
+        });
+    });
 }
 
 function prepareDynamicCapture(options = {}) {
@@ -207,3 +221,10 @@ setTimeout(() => {
         console.error("Content script: Background script not responding:", error);
     });
 }, 1e3);
+
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+        getPageDimensionsForCapture: getPageDimensionsForCapture,
+        waitForPageLoadOrTimeout: waitForPageLoadOrTimeout
+    };
+}
