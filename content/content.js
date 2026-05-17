@@ -214,14 +214,6 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return false;
 });
 
-setTimeout(() => {
-    browser.runtime.sendMessage({
-        action: "ping"
-    }).then(() => {}).catch(error => {
-        console.error("Content script: Background script not responding:", error);
-    });
-}, 1e3);
-
 if (typeof module !== "undefined" && module.exports) {
     module.exports = {
         getPageDimensionsForCapture: getPageDimensionsForCapture,
