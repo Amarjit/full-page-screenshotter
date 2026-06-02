@@ -13,6 +13,7 @@ try {
         postCaptureOpenResult: true,
         postCaptureDownload: false,
         postCaptureCopy: false,
+        debugModeEnabled: false,
         dynamicMaxScrolls: 25,
         dynamicWaitMs: 450,
         dynamicGapPx: 0,
@@ -44,10 +45,24 @@ try {
     function captureModeToRuntimeMode(mode) {
         return normalizeDefaultCaptureMode(mode) === "dynamic" ? "dynamic" : "fast";
     }
+    function debugLog(event, details) {
+        if (typeof ScreenshotDiagnostics !== "undefined") {
+            ScreenshotDiagnostics.log(event, details);
+        }
+    }
+    function debugError(event, error, details) {
+        if (typeof ScreenshotDiagnostics !== "undefined") {
+            ScreenshotDiagnostics.error(event, error, details);
+        }
+    }
     function withTimeout(promise, timeoutMs, message) {
         let timeoutId;
         const timeout = new Promise((resolve, reject) => {
             timeoutId = setTimeout(() => {
+                debugLog("timeout fired", {
+                    message: message,
+                    timeoutMs: timeoutMs
+                });
                 reject(new Error(message));
             }, timeoutMs);
         });
@@ -75,6 +90,7 @@ try {
             postCaptureOpenResult: stored.postCaptureOpenResult !== false,
             postCaptureDownload: stored.postCaptureDownload === true,
             postCaptureCopy: stored.postCaptureCopy === true,
+            debugModeEnabled: stored.debugModeEnabled === true,
             dynamicMaxScrolls: stored.dynamicMaxScrolls || DEFAULT_CAPTURE_PREFERENCES.dynamicMaxScrolls,
             dynamicWaitMs: stored.dynamicWaitMs == null ? DEFAULT_CAPTURE_PREFERENCES.dynamicWaitMs : stored.dynamicWaitMs,
             dynamicGapPx: stored.dynamicGapPx == null ? DEFAULT_CAPTURE_PREFERENCES.dynamicGapPx : stored.dynamicGapPx,
@@ -97,8 +113,16 @@ try {
     }
     async function updateBrowserActionPopup() {
         const preferences = await getCapturePreferences();
+        if (typeof ScreenshotDiagnostics !== "undefined") {
+            ScreenshotDiagnostics.setEnabled(preferences.debugModeEnabled);
+        }
+        const popup = preferences.singleClickCaptureEnabled ? "" : "popup/popup.html";
+        debugLog("browser action popup update", {
+            singleClickCaptureEnabled: preferences.singleClickCaptureEnabled,
+            popup: popup
+        });
         await browser.browserAction.setPopup({
-            popup: preferences.singleClickCaptureEnabled ? "" : "popup/popup.html"
+            popup: popup
         });
     }
     function preferencesToCaptureOptions(preferences, modeOverride = null) {
@@ -115,13 +139,25 @@ try {
         };
     }
     async function getPageDimensions(tabId) {
+        debugLog("dimensions start", {
+            tabId: tabId
+        });
         try {
             try {
                 const existingResponse = await sendTabMessageWithTimeout(tabId, {
                     action: "getPageDimensions"
                 }, "Timed out while asking the page for screenshot dimensions");
+                debugLog("dimensions existing content script response", {
+                    tabId: tabId,
+                    success: existingResponse && existingResponse.success
+                });
                 return existingResponse;
-            } catch (messageError) {}
+            } catch (messageError) {
+                debugLog("dimensions existing content script unavailable", {
+                    tabId: tabId,
+                    message: messageError.message
+                });
+            }
             await executeScriptWithTimeout(tabId, {
                 file: "/content/scroll-strategies.js"
             });
@@ -140,8 +176,15 @@ try {
             const response = await sendTabMessageWithTimeout(tabId, {
                 action: "getPageDimensions"
             }, "Timed out while asking the injected page script for screenshot dimensions");
+            debugLog("dimensions injected content script response", {
+                tabId: tabId,
+                success: response && response.success
+            });
             return response;
         } catch (error) {
+            debugError("dimensions failed", error, {
+                tabId: tabId
+            });
             console.error("Failed to get page dimensions:", error);
             throw error;
         }
@@ -161,20 +204,39 @@ try {
         return resultId;
     }
     async function openResultTab(imageDataUrl, warning = null, filename = createScreenshotFilename(), autoActions = null, active = true) {
+        debugLog("result tab open start", {
+            active: active,
+            filename: filename,
+            autoActions: autoActions,
+            hasWarning: !!warning
+        });
         try {
             const resultId = createScreenshotResult(imageDataUrl, warning, filename, autoActions);
             const tab = await createTabWithTimeout({
                 url: browser.runtime.getURL(`result/result.html?id=${encodeURIComponent(resultId)}`),
                 active: active
             });
+            debugLog("result tab open success", {
+                tabId: tab && tab.id,
+                active: active
+            });
             return tab;
         } catch (error) {
+            debugError("result tab open failed", error, {
+                active: active,
+                filename: filename,
+                autoActions: autoActions
+            });
             console.error("Failed to display screenshot:", error);
             throw error;
         }
     }
     async function runPostCaptureActions(imageDataUrl, warning, preferences) {
         const actions = normalizePostCaptureActions(preferences);
+        debugLog("post capture actions start", {
+            actions: actions,
+            hasWarning: !!warning
+        });
         const filename = createScreenshotFilename();
         const autoActions = {
             download: actions.download,
@@ -184,11 +246,27 @@ try {
         try {
             await openResultTab(imageDataUrl, warning, filename, autoActions, actions.openResult);
         } catch (error) {
+            debugError("post capture actions failed", error, {
+                actions: actions
+            });
             console.error("Failed to open screenshot result tab:", error);
         }
     }
     async function handleToolbarClick(options = {}) {
         const mode = options.mode || "fast";
+        debugLog("capture handler start", {
+            mode: mode,
+            options: {
+                maxScrolls: options.maxScrolls,
+                waitMs: options.waitMs,
+                gapPx: options.gapPx,
+                startFromTop: options.startFromTop,
+                hideOverlays: options.hideOverlays,
+                disableBackgrounds: options.disableBackgrounds,
+                pauseAnimations: options.pauseAnimations,
+                postCaptureActions: options.postCaptureActions
+            }
+        });
         const maxScrolls = Math.max(1, parseInt(options.maxScrolls || 25, 10));
         const parsedWaitMs = parseInt(options.waitMs == null ? 450 : options.waitMs, 10);
         const waitMs = Number.isFinite(parsedWaitMs) ? Math.max(0, parsedWaitMs) : 450;
@@ -203,7 +281,16 @@ try {
                 throw new Error("No active tab found");
             }
             const currentTab = tabs[0];
+            debugLog("active tab selected", {
+                tabId: currentTab.id,
+                status: currentTab.status
+            });
             const pageInfo = await getPageDimensions(currentTab.id);
+            debugLog("captureFullPage start", {
+                mode: mode,
+                tabId: currentTab.id,
+                singleCapturePossible: pageInfo && pageInfo.singleCapturePossible
+            });
             const result = await captureFullPage(pageInfo, {
                 mode: mode,
                 tabId: currentTab.id,
@@ -218,8 +305,16 @@ try {
                 onProgress: progress => {
                     if (activeCapture) {
                         activeCapture.progress = `${progress.chunks} chunks`;
+                        debugLog("capture progress", {
+                            mode: mode,
+                            chunks: progress.chunks
+                        });
                     }
                 }
+            });
+            debugLog("captureFullPage success", {
+                mode: mode,
+                warningCount: Array.isArray(result.warnings) ? result.warnings.length : 0
             });
             const warnings = Array.isArray(result.warnings) ? result.warnings.slice() : [];
             if (mode !== "dynamic" && !pageInfo.singleCapturePossible) {
@@ -237,6 +332,9 @@ try {
             const postCaptureActions = options.postCaptureActions || normalizePostCaptureActions(await getCapturePreferences());
             await runPostCaptureActions(result.dataUrl, warnings.length > 0 ? warnings.join(" ") : null, postCaptureActions);
         } catch (error) {
+            debugError("capture process failed", error, {
+                mode: mode
+            });
             console.error("Capture process failed:", error);
             try {
                 const errorHtml = `\n        <!DOCTYPE html>\n        <html>\n        <head>\n          <title>Screenshot Help - Full Page Screenshot</title>\n          <style>\n            body {\n              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n              margin: 0;\n              padding: 32px;\n              color: #1f2933;\n              background: #f8f9fa;\n              line-height: 1.6;\n            }\n            .container {\n              max-width: 720px;\n              margin: 0 auto;\n              background: white;\n              padding: 32px;\n              border-radius: 12px;\n              box-shadow: 0 4px 20px rgba(0,0,0,0.08);\n            }\n            h1 {\n              margin: 0 0 10px;\n              color: #0f172a;\n              font-size: 26px;\n              line-height: 1.2;\n            }\n            h2 {\n              margin: 0 0 12px;\n              color: #243b53;\n              font-size: 17px;\n            }\n            p {\n              margin: 0 0 14px;\n            }\n            .intro {\n              color: #52606d;\n              font-size: 15px;\n            }\n            .help-section {\n              background: #eef6ff;\n              padding: 18px;\n              border-radius: 8px;\n              margin: 22px 0;\n              text-align: left;\n              border-left: 4px solid #3498db;\n            }\n            .steps {\n              margin: 0;\n              padding-left: 22px;\n            }\n            .steps li {\n              margin-bottom: 9px;\n            }\n            .technical-detail {\n              background: #f8fafc;\n              color: #52606d;\n              padding: 14px;\n              border-radius: 8px;\n              margin: 22px 0;\n              text-align: left;\n              border: 1px solid #e5e7eb;\n              font-size: 13px;\n            }\n            .technical-detail code {\n              display: block;\n              margin-top: 8px;\n              white-space: pre-wrap;\n              word-break: break-word;\n              font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;\n            }\n            .close-help {\n              margin-top: 18px;\n              color: #52606d;\n              font-size: 14px;\n            }\n          </style>\n        </head>\n        <body>\n          <div class="container">\n            <h1>We couldn’t take the screenshot</h1>\n            <p class="intro">This can happen when Firefox or the website blocks screenshots, when the page is still loading, or when the page is very large.</p>\n\n            <div class="help-section">\n              <h2>Things to try</h2>\n              <ul class="steps">\n                <li>Refresh the page, wait a moment, then try again.</li>\n                <li>For long or complex pages, try Dynamic Scroll Capture.</li>\n                <li>Check that the extension has permission to run on this site.</li>\n                <li>If this is a private window, enable “Allow in Private Windows” for the extension.</li>\n                <li>Firefox may block protected pages such as <code>about:</code> pages by default. If Firefox offers an extension option for this, enable that permission before trying again.</li>\n              </ul>\n            </div>\n\n            <div class="technical-detail">\n              <strong>Technical detail</strong>\n              <code>${escapeHtml(error.message)}</code>\n            </div>\n\n            <p class="close-help">You can close this tab with <kbd>Ctrl</kbd> + <kbd>W</kbd> on Windows/Linux or <kbd>Cmd</kbd> + <kbd>W</kbd> on Mac.</p>\n          </div>\n        </body>\n        </html>\n      `;
@@ -249,11 +347,18 @@ try {
                     active: true
                 }, "Timed out while opening the screenshot error tab");
             } catch (displayError) {
+                debugError("error tab display failed", displayError, {
+                    originalError: error.message
+                });
                 console.error("Failed to display error:", displayError);
             }
         }
     }
     function startCaptureFromMessage(message, sendResponse) {
+        debugLog("runtime startCapture message received", {
+            mode: message && message.mode,
+            active: !!(activeCapture && activeCapture.active)
+        });
         if (activeCapture && activeCapture.active) {
             sendResponse({
                 success: false,
@@ -289,11 +394,22 @@ try {
     }
     async function startSingleClickCapture() {
         if (activeCapture && activeCapture.active) {
+            debugLog("single-click cancelled active capture", {
+                mode: activeCapture.mode,
+                progress: activeCapture.progress
+            });
             activeCapture.cancelled = true;
             return;
         }
         const preferences = await getCapturePreferences();
+        if (typeof ScreenshotDiagnostics !== "undefined") {
+            ScreenshotDiagnostics.setEnabled(preferences.debugModeEnabled);
+        }
         const options = preferencesToCaptureOptions(preferences);
+        debugLog("single-click capture start", {
+            mode: options.mode,
+            postCaptureActions: options.postCaptureActions
+        });
         activeCapture = {
             active: true,
             cancelled: false,
@@ -303,6 +419,9 @@ try {
         try {
             await runCaptureFlowWithTimeout(handleToolbarClick(options));
         } finally {
+            debugLog("single-click capture finished", {
+                mode: options.mode
+            });
             activeCapture = null;
         }
     }
@@ -316,11 +435,19 @@ try {
         return null;
     }
     async function startCaptureFromCommand(command) {
+        debugLog("command received", {
+            command: command
+        });
         const mode = commandToCaptureMode(command);
         if (!mode) {
             return;
         }
         if (activeCapture && activeCapture.active) {
+            debugLog("command ignored because capture active", {
+                command: command,
+                activeMode: activeCapture.mode,
+                progress: activeCapture.progress
+            });
             return;
         }
         activeCapture = {
@@ -331,13 +458,28 @@ try {
         };
         try {
             const preferences = await getCapturePreferences();
+            if (typeof ScreenshotDiagnostics !== "undefined") {
+                ScreenshotDiagnostics.setEnabled(preferences.debugModeEnabled);
+            }
             const options = preferencesToCaptureOptions(preferences, mode);
+            debugLog("command capture start", {
+                command: command,
+                mode: mode,
+                postCaptureActions: options.postCaptureActions
+            });
             await runCaptureFlowWithTimeout(handleToolbarClick(options));
         } finally {
+            debugLog("command capture finished", {
+                command: command,
+                mode: mode
+            });
             activeCapture = null;
         }
     }
     function closeResultTab(sender, sendResponse) {
+        debugLog("close result tab requested", {
+            tabId: sender && sender.tab && sender.tab.id
+        });
         if (!sender || !sender.tab || sender.tab.id == null) {
             sendResponse({
                 success: false,
@@ -358,6 +500,9 @@ try {
         return true;
     }
     function getScreenshotResult(message, sendResponse) {
+        debugLog("screenshot result requested", {
+            hasResultId: !!(message && message.resultId)
+        });
         const resultId = message && message.resultId;
         const result = screenshotResults.get(resultId);
         if (!result) {
@@ -374,9 +519,12 @@ try {
         });
         return false;
     }
-    async function initialize() {
-        await updateBrowserActionPopup();
+    function initialize() {
+        debugLog("background initialize start", {});
         browser.browserAction.onClicked.addListener(() => {
+            debugLog("toolbar click received", {
+                active: !!(activeCapture && activeCapture.active)
+            });
             startSingleClickCapture().catch(error => {
                 console.error("Single-click capture failed:", error);
             });
@@ -389,16 +537,28 @@ try {
             });
         }
         browser.storage.onChanged.addListener((changes, areaName) => {
+            debugLog("storage changed", {
+                areaName: areaName,
+                keys: Object.keys(changes || {})
+            });
+            if (areaName === "local" && Object.prototype.hasOwnProperty.call(changes, "debugModeEnabled") && typeof ScreenshotDiagnostics !== "undefined") {
+                ScreenshotDiagnostics.setEnabled(changes.debugModeEnabled.newValue === true);
+            }
             if (areaName !== "local") {
                 return;
             }
             if (Object.prototype.hasOwnProperty.call(changes, "singleClickCaptureEnabled")) {
                 updateBrowserActionPopup().catch(error => {
+                    debugError("browser action popup update failed after storage change", error);
                     console.error("Failed to update capture button behavior:", error);
                 });
             }
         });
         browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            debugLog("runtime message received", {
+                action: message && message.action,
+                senderTabId: sender && sender.tab && sender.tab.id
+            });
             if (message.action === "ping") {
                 sendResponse({
                     status: "alive",
@@ -433,10 +593,13 @@ try {
             }
             return false;
         });
+        updateBrowserActionPopup().catch(error => {
+            debugError("initial browser action popup update failed", error);
+            console.error("Failed to initialize capture button behavior:", error);
+        });
+        debugLog("background initialize listeners registered", {});
     }
-    initialize().catch(error => {
-        console.error("Failed to initialize extension:", error);
-    });
+    initialize();
 } catch (error) {
     console.error("CRITICAL: Background script failed to load:", error);
     console.error("Error stack:", error.stack);

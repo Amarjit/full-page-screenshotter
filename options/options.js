@@ -15,11 +15,15 @@ async function initializeOptions() {
     bindAutoSave(controls);
     bindShortcutSettings(controls);
     try {
-        const stored = await browser.storage.local.get([ "singleClickCaptureEnabled", "defaultCaptureMode", "postCaptureOpenResult", "postCaptureDownload", "postCaptureCopy", "dynamicMaxScrolls", "dynamicWaitMs", "dynamicGapPx", "dynamicStartFromTop", "dynamicHideOverlays", "dynamicDisableBackgrounds", "dynamicPauseAnimations" ]);
+        const stored = await browser.storage.local.get([ "singleClickCaptureEnabled", "defaultCaptureMode", "postCaptureOpenResult", "postCaptureDownload", "postCaptureCopy", "debugModeEnabled", "dynamicMaxScrolls", "dynamicWaitMs", "dynamicGapPx", "dynamicStartFromTop", "dynamicHideOverlays", "dynamicDisableBackgrounds", "dynamicPauseAnimations" ]);
         controls.singleClickCaptureEnabled.checked = stored.singleClickCaptureEnabled === true;
         controls.postCaptureOpenResult.checked = stored.postCaptureOpenResult !== false;
         controls.postCaptureDownload.checked = stored.postCaptureDownload === true;
         controls.postCaptureCopy.checked = stored.postCaptureCopy === true;
+        controls.debugModeEnabled.checked = stored.debugModeEnabled === true;
+        if (typeof ScreenshotDiagnostics !== "undefined") {
+            ScreenshotDiagnostics.setEnabled(controls.debugModeEnabled.checked);
+        }
         ensurePostCaptureActionSelected(controls);
         const defaultMode = normalizeDefaultCaptureMode(stored.defaultCaptureMode);
         controls.defaultModeStatic.checked = defaultMode === "static";
@@ -44,6 +48,7 @@ function getControls() {
         postCaptureOpenResult: document.getElementById("postCaptureOpenResult"),
         postCaptureDownload: document.getElementById("postCaptureDownload"),
         postCaptureCopy: document.getElementById("postCaptureCopy"),
+        debugModeEnabled: document.getElementById("debugModeEnabled"),
         dynamicSettingsPanel: document.getElementById("dynamicSettingsPanel"),
         defaultModeStatic: document.getElementById("defaultModeStatic"),
         defaultModeDynamic: document.getElementById("defaultModeDynamic"),
@@ -76,7 +81,7 @@ function bindShortcutSettings(controls) {
 }
 
 function getManagedInputs(controls) {
-    return [ controls.singleClickCaptureEnabled, controls.postCaptureOpenResult, controls.postCaptureDownload, controls.postCaptureCopy, ...getSingleClickInputs(controls) ];
+    return [ controls.singleClickCaptureEnabled, controls.postCaptureOpenResult, controls.postCaptureDownload, controls.postCaptureCopy, controls.debugModeEnabled, ...getSingleClickInputs(controls) ];
 }
 
 function getSingleClickInputs(controls) {
@@ -115,6 +120,7 @@ async function saveOptions(controls) {
             postCaptureOpenResult: controls.postCaptureOpenResult.checked,
             postCaptureDownload: controls.postCaptureDownload.checked,
             postCaptureCopy: controls.postCaptureCopy.checked,
+            debugModeEnabled: controls.debugModeEnabled.checked,
             dynamicMaxScrolls: maxScrolls,
             dynamicWaitMs: waitSecondsToMs(waitSeconds),
             dynamicGapPx: gapPx,
@@ -123,6 +129,17 @@ async function saveOptions(controls) {
             dynamicDisableBackgrounds: controls.disableBackgrounds.checked,
             dynamicPauseAnimations: controls.pauseAnimations.checked
         });
+        if (typeof ScreenshotDiagnostics !== "undefined") {
+            ScreenshotDiagnostics.setEnabled(controls.debugModeEnabled.checked);
+            ScreenshotDiagnostics.log("options saved", {
+                singleClickCaptureEnabled: controls.singleClickCaptureEnabled.checked,
+                defaultCaptureMode: defaultCaptureMode,
+                postCaptureOpenResult: controls.postCaptureOpenResult.checked,
+                postCaptureDownload: controls.postCaptureDownload.checked,
+                postCaptureCopy: controls.postCaptureCopy.checked,
+                debugModeEnabled: controls.debugModeEnabled.checked
+            });
+        }
         setStatus(postCaptureWasEmpty ? "Saved. Open result tab stays enabled because at least one after-capture action is required." : "Saved");
     } catch (error) {
         setStatus(`Failed to save options: ${error.message}`);

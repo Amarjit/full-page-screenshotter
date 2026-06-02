@@ -6,9 +6,22 @@ const DEFAULT_WAIT_SECONDS = .5;
 
 const DEFAULT_GAP_PX = 0;
 
+function debugLog(event, details) {
+    if (typeof ScreenshotDiagnostics !== "undefined") {
+        ScreenshotDiagnostics.log(event, details);
+    }
+}
+
+function debugError(event, error, details) {
+    if (typeof ScreenshotDiagnostics !== "undefined") {
+        ScreenshotDiagnostics.error(event, error, details);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", initializePopup);
 
 async function initializePopup() {
+    debugLog("popup initialize start", {});
     const fastCaptureButton = document.getElementById("fastCapture");
     const dynamicCaptureButton = document.getElementById("dynamicCapture");
     const stopCaptureButton = document.getElementById("stopCapture");
@@ -30,7 +43,13 @@ async function initializePopup() {
         optionsToggle.setAttribute("aria-expanded", String(expanded));
     });
     try {
-        const stored = await browser.storage.local.get([ "dynamicMaxScrolls", "dynamicWaitMs", "dynamicGapPx", "dynamicStartFromTop", "dynamicHideOverlays", "dynamicDisableBackgrounds", "dynamicPauseAnimations" ]);
+        const stored = await browser.storage.local.get([ "debugModeEnabled", "dynamicMaxScrolls", "dynamicWaitMs", "dynamicGapPx", "dynamicStartFromTop", "dynamicHideOverlays", "dynamicDisableBackgrounds", "dynamicPauseAnimations" ]);
+        if (typeof ScreenshotDiagnostics !== "undefined") {
+            ScreenshotDiagnostics.setEnabled(stored.debugModeEnabled === true);
+        }
+        debugLog("popup settings loaded", {
+            debugModeEnabled: stored.debugModeEnabled === true
+        });
         maxScrollsInput.value = normalizeMaxScrolls(stored.dynamicMaxScrolls || DEFAULT_MAX_SCROLLS);
         waitSecondsInput.value = formatWaitSeconds(stored.dynamicWaitMs == null ? DEFAULT_WAIT_MS : stored.dynamicWaitMs);
         gapPxInput.value = normalizeGapPx(stored.dynamicGapPx == null ? DEFAULT_GAP_PX : stored.dynamicGapPx);
@@ -39,6 +58,7 @@ async function initializePopup() {
         disableBackgroundsInput.checked = stored.dynamicDisableBackgrounds === true;
         pauseAnimationsInput.checked = stored.dynamicPauseAnimations !== false;
     } catch (error) {
+        debugError("popup settings load failed", error);
         setStatus(`Failed to load setting: ${error.message}`);
     }
     await refreshStatus();
@@ -59,6 +79,16 @@ async function startCapture(mode) {
     maxScrollsInput.value = maxScrolls;
     waitSecondsInput.value = waitSeconds;
     gapPxInput.value = gapPx;
+    debugLog("popup capture start requested", {
+        mode: mode,
+        maxScrolls: maxScrolls,
+        waitMs: waitMs,
+        gapPx: gapPx,
+        startFromTop: startFromTop,
+        hideOverlays: hideOverlays,
+        disableBackgrounds: disableBackgrounds,
+        pauseAnimations: pauseAnimations
+    });
     setBusy(true);
     setStatus(mode === "dynamic" ? "Starting dynamic capture..." : "Starting fast capture...");
     try {
@@ -82,18 +112,26 @@ async function startCapture(mode) {
             disableBackgrounds: disableBackgrounds,
             pauseAnimations: pauseAnimations
         });
+        debugLog("popup startCapture response", {
+            success: !!(response && response.success),
+            hasError: !!(response && response.error)
+        });
         if (!response || !response.success) {
             throw new Error(response && response.error ? response.error : "Capture failed");
         }
         setStatus("Capture started. This popup can be reopened to stop dynamic capture.");
         window.close();
     } catch (error) {
+        debugError("popup capture start failed", error, {
+            mode: mode
+        });
         setStatus(error.message);
         setBusy(false);
     }
 }
 
 async function stopCapture() {
+    debugLog("popup stop requested", {});
     setStatus("Stopping capture...");
     try {
         await browser.runtime.sendMessage({
@@ -101,6 +139,7 @@ async function stopCapture() {
         });
         await refreshStatus();
     } catch (error) {
+        debugError("popup stop failed", error);
         setStatus(`Failed to stop: ${error.message}`);
     }
 }
@@ -111,9 +150,15 @@ async function refreshStatus() {
             action: "getCaptureStatus"
         });
         const active = !!(response && response.active);
+        debugLog("popup status refreshed", {
+            active: active,
+            mode: response && response.mode,
+            progress: response && response.progress
+        });
         setBusy(active);
         setStatus(active ? `Capturing ${response.mode}... ${response.progress || ""}`.trim() : "Ready");
     } catch (error) {
+        debugError("popup status refresh failed", error);
         setStatus("Ready");
     }
 }

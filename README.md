@@ -29,6 +29,7 @@ A Firefox WebExtension that captures full-page screenshots including horizontal 
 - Optional single-click toolbar capture using a saved static or dynamic default
 - Assignable extension shortcuts for Fast Capture and Dynamic Scroll Capture
 - Stop an active Dynamic Scroll Capture from the popup
+- Optional debug mode for diagnosing intermittent capture issues
 - Local-only capture with no tracking, analytics, uploads, or external services
 
 ## What It Does And Why It Helps
@@ -54,6 +55,7 @@ A Firefox WebExtension that captures full-page screenshots including horizontal 
 - **Extension shortcuts** expose separate Fast Capture and Dynamic Scroll Capture commands in Firefox's extension shortcut settings. You can open shortcut setup from the Keyboard Shortcuts section in the extension options page, or manually from Firefox's **Manage Extension Shortcuts** page. No default keys are assigned, so you can choose shortcuts that do not conflict with Firefox, websites, or other add-ons.
 - **After-capture actions** can be configured from the extension options page. A finished screenshot can open in the result tab, download automatically as a PNG, copy to the clipboard, or run any combination of those actions. Opening the result tab is enabled by default. Filenames use the `screenshotter-YYYYMMDD-HHMMSS.png` format.
 - **Download, copy, and close controls** are still available on the result page when the open result tab action is enabled.
+- **Debug mode** can be enabled from the extension options page when diagnosing intermittent problems. It logs capture lifecycle events and errors to the extension console without logging screenshot data or page content.
 - **Friendly error page** explains common problems in plain language, including blocked Firefox pages, private browsing permission issues, and site permission problems.
 - **Designed for modern websites** including static pages, React/SPAs, lazy-loaded layouts, and nested-scroll pages. Firefox-protected pages such as `about:` pages and sites that block capture may still be unavailable.
 - **Private by design**: screenshots stay in your browser. The extension does not track you, does not run analytics, does not upload screenshots, does not call external services, and does not store screenshots remotely. Finished screenshots are handed to the result page in memory so they can be displayed, downloaded, or copied without being permanently stored by the extension.
@@ -123,6 +125,26 @@ To use this extension in Firefox Private Browsing windows:
 7. Choose **Static Capture** or **Dynamic Scroll Capture** as the default toolbar action
 8. If you choose Dynamic Scroll Capture, adjust the dynamic settings shown below the default mode
 9. Return to a webpage and click the toolbar icon to capture immediately without opening the popup
+
+### Enable Debug Mode
+
+Use this only when diagnosing a problem or when requested in a bug report.
+
+1. Open `about:addons` in Firefox
+2. Select **Extensions**
+3. Find **Fullscreen Shotter**
+4. Open the extension menu or details page
+5. Open **Preferences** or **Options**
+6. In **Debug**, enable **Enable debug mode**
+7. Open `about:debugging#/runtime/this-firefox`
+8. Find **Fullscreen Shotter** in the extension list
+9. Click **Inspect**
+10. Open the **Console** tab in the developer tools window
+11. Reproduce the issue while the console is open
+12. Copy the relevant lines that start with `[Fullscreen Shotter debug]`
+13. Turn debug mode off after collecting logs
+
+Debug logs do not include screenshot image data, screenshot bytes, page content, or sensitive page URLs. They may include technical state such as capture mode, selected options, tab ids, progress counts, timeout messages, and error messages.
 
 ### Create Keyboard Shortcuts
 

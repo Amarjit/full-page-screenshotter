@@ -248,6 +248,16 @@
       </div>
     </fieldset>
 
+    <fieldset id="debugSettings">
+      <legend>Debug</legend>
+      <p class="feature-intro">Enable extra console logging when diagnosing capture issues. Debug logs avoid screenshot data and page content.</p>
+
+      <label class="checkbox-setting" for="debugModeEnabled">
+        <input id="debugModeEnabled" type="checkbox">
+        <span>Enable debug mode</span>
+      </label>
+    </fieldset>
+
     <fieldset id="shortcutSettings">
       <legend>Keyboard Shortcuts</legend>
       <p class="feature-intro">Assign shortcuts for Fast Capture and Dynamic Scroll Capture using Firefox's extension shortcut settings.</p>
@@ -257,6 +267,7 @@
 
     <div id="status" class="status" role="status"></div>
   </main>
+  <script src="../lib/diagnostics.js"></script>
   <script src="options.js"></script>
 </body>
 </html>
